@@ -3,7 +3,6 @@
 #define PIN_ALED  5
 #define PIN_DISKCORRECT  4
 
-
 boolean powerOn = false;
 
 //disk
@@ -23,7 +22,7 @@ boolean lightState = false;
 char buffer[10];
 byte bufPtr = 0;
 
-void setup(){
+void setup() {
   pinMode(PIN_DISKSENSE, INPUT);
   digitalWrite(PIN_DISKSENSE, HIGH);
   pinMode(PIN_DISKCORRECT, INPUT);
@@ -32,98 +31,82 @@ void setup(){
   pinMode(PIN_LEDS, OUTPUT);
   pinMode(PIN_ALED, OUTPUT);
   Serial.begin(9600);
-
 }
 
-void processSerial(char* c){
-  if(c[0] == 'p'){    //power off
+void processSerial(char* c) {
+  if (c[0] == 'p') {    //power off
     powerOn = false;
-  } 
-  else if (c[0] == 'P'){
+  } else if (c[0] == 'P') {
     powerOn = true;
-  } 
-  else if (c[0] == 'd'){
+  } else if (c[0] == 'd') {
     damageTimer = millis();
     lastFlicker = millis();
     nextFlicker = 80;
   }
 }
 
-void loop(){
-  while(Serial.available()){
+void loop() {
+  while (Serial.available()) {
     char c = Serial.read();
-    if(c == ','){
+    if (c == ',') {
       bufPtr = 0;
       processSerial(buffer);
-    } 
-    else {
-      if(bufPtr + 1 < 10){
+    } else {
+      if (bufPtr + 1 < 10) {
         buffer[bufPtr] = c;
-        bufPtr ++;
-      } 
-      else {
+        bufPtr++;
+      } else {
         bufPtr = 0;
       }
     }
-
-
   }
-  
+
   byte diskSense = digitalRead(PIN_DISKSENSE);
-  
-  if(diskSense != lastDiskSense){
-    
-    if(diskSense == 0){
+
+  if (diskSense != lastDiskSense) {
+    if (diskSense == 0) {
       //disk insert
       readTimer = millis();
       readingDisk = true;
       Serial.print("D,");
-
     } else {
       Serial.print("d,");
     }
     lastDiskSense = diskSense;
   }
-  
-  
+
   //everything past this is power dependant
-  if(powerOn == false){
+  if (powerOn == false) {
     digitalWrite(PIN_LEDS, LOW);
 
     return;
   }
-  
-  if(readTimer + 5500 > millis()){
-    if(random(100) < 5){
+
+  if (readTimer + 5500 > millis()) {
+    if (random(100) < 5) {
       activityLight = !activityLight;
     }
   } else {
-    if(readingDisk){
+    if (readingDisk) {
       readingDisk = false;
-      if(digitalRead(PIN_DISKCORRECT)){
+      if (digitalRead(PIN_DISKCORRECT)) {
         Serial.print("I,");
       } else {
         Serial.print("i,");
       }
     }
     activityLight = false;
-    
   }
   digitalWrite(PIN_ALED, activityLight);
-  
-  if(damageTimer + 2000 > millis()){
-    if(lastFlicker + nextFlicker < millis()){
-      nextFlicker = 50 + random(50) ;
+
+  if (damageTimer + 2000 > millis()) {
+    if (lastFlicker + nextFlicker < millis()) {
+      nextFlicker = 50 + random(50);
       lastFlicker = millis();
       lightState = !lightState;
     }
-  } 
-  else {
+  } else {
     lightState = powerOn;
   }
   digitalWrite(PIN_LEDS, lightState == true ? HIGH : LOW);
-
 }
-
-
-
